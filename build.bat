@@ -61,7 +61,7 @@ REM -arch:IA32 required for 32-bit builds??
 REM 32-bit launcher build
 REM %CompileCommand%  %CommonCompilerFlags% ..\..\src\launcher\win32_launch.cpp ..\..\src\engine\msvc.c -Fmwin32_launch.map /link %CommonLinkerFlags% -subsystem:windows,5.1 platform.lib renderapi_gl.lib opengl32.lib mathlib.lib libfstd.lib
 REM 64-bit launcher build
-%CompileCommand% %CommonCompilerFlags% -I..\imgui -I..\imgui\examples ..\src\win32_main.cpp -MT -Fowin32_main.obj -Fmwin32_main.map /link %CommonLinkerFlags%
+%CompileCommand% %CommonCompilerFlags% -I..\imgui -I..\imgui\examples ..\src\win32_main.cpp -MT -Fowin32_main.obj -Fmwin32_main.map /link %CommonLinkerFlags% libfstd.lib
 
 popd
 
