@@ -3,8 +3,10 @@
 #include "shared.h"
 #include "shared.cpp"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-//#include "libfstd/containers/array.h"
+#include "libfstd/containers/array.h"
 
 #include "opengl/opengl.h"
 #include "opengl/opengl_imports.h"
@@ -23,6 +25,9 @@
 #include <imgui_impl_win32.cpp>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_opengl3.cpp>
+
+#include "editor.h"
+#include "editor.cpp"
 
 static bool GlobalRunning = false;
 
@@ -124,21 +129,6 @@ int main(int ArgCount, char** Args) {
 				    GlobalRunning = false;
 			    } break;
 
-                // todo(jax): Actually handle our input processing via WM_INPUT for raw input
-
-			    /*case WM_SYSKEYDOWN:
-			    case WM_SYSKEYUP:
-			    case WM_KEYDOWN:
-			    case WM_KEYUP: {
-				    uint32 VKCode = (uint32)Message.wParam;
-
-				    // note(jax): Since we are comparing WasDown to IsDown,
-				    // we MUST use == and != to convert these bit tests to actual
-				    // 0 or 1 values.
-				    bool WasDown = ((Message.lParam & (1 << 30)) != 0);
-				    bool IsDown = ((Message.lParam & (1 << 31)) == 0);
-			    } break;*/
-
 			    default: {
 				    TranslateMessage(&Message);
 				    DispatchMessageA(&Message);
@@ -153,6 +143,8 @@ int main(int ArgCount, char** Args) {
 
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
+
+        Editor_Render();
 
         ImGui::Render(); 
         glClearColor(0.f, 0.f, 0.f, 0.f);
