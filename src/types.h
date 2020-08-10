@@ -125,8 +125,6 @@ struct string {
     umm Count;
 };
 
-#include "shared.h"
-
 inline u32 SafeTruncateU32(u64 Value) {
 	// todo(jax): Defines for min/max values 
 	Assert(Value <= 0xFFFFFFFF);

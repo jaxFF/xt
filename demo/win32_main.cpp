@@ -4,14 +4,11 @@
 #include <stdlib.h>
 
 #include "types.h"
-#include "shared.h"
-#include "shared.cpp"
 
 #include "opengl/opengl.h"
 #include "opengl/opengl_imports.h"
-#include "opengl/renderapi_gl.h"
 #include "opengl/opengl.cpp"
-#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "../../src/opengl/renderapi_gl.h"
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "opengl/opengl.h"
 #define IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
 #define IMGUI_DISABLE_WIN32_FUNCTIONS
 #include <imgui.h>

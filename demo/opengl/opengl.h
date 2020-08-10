@@ -1,6 +1,18 @@
 #ifndef OPENGL_LOADER_H
 #define OPENGL_LOADER_H
 
+struct gl_info {
+    char* Vendor;
+    char* Renderer;
+    char* Extensions;
+
+    char* Version;
+    char* GLSLVersion;
+};
+
+bool GLInit(gl_info* Info, void* Handle);
+gl_info GLGetInfo();
+
 struct gl_version {
     u32 Major, Minor;
 };

@@ -1,4 +1,6 @@
-﻿struct EditorRow {
+﻿#include "types.h"
+
+struct EditorRow {
     char* Chars;
     size_t Size;
 };
