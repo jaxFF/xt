@@ -14,6 +14,7 @@ struct EditorState {
 
     EditorRow* Row;
     int RowCount;
+    int CharCount;
 
     bool IsFileDirty;
     char* FileName;
@@ -62,6 +63,7 @@ void Editor_OpenFile(char* Filename) {
         while (LineLength > 0 && (Line[LineLength - 1] == '\n' || Line[LineLength - 1] == '\r')) {
             LineLength--;
             Editor_AppendRow(Line, LineLength);
+            State.CharCount += LineLength;
         }
     }
     free(Line);
@@ -81,7 +83,7 @@ void Editor_Init() {
 
     State.Row = (EditorRow*)malloc(sizeof(EditorRow));
 
-    Editor_OpenFile("test1.txt");
+    Editor_OpenFile("../src/editor.cpp");
 
     IsInitialized = true;
 
@@ -121,8 +123,8 @@ int Editor_GetCharacterIndexByCursor(int X, int Y) {
 
 void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyle().Colors[ImGuiCol_FrameBg]);
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-    ImGui::BeginChild("Editor", WindowSize);
+    //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("Editor", WindowSize, true);
     ImGui::PushAllowKeyboardFocus(true);
 
     // Handle input here or else we can't grab the childs input
@@ -260,8 +262,10 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
 
     ImGui::PopAllowKeyboardFocus();
     ImGui::EndChild();
-    ImGui::PopStyleVar();
+    //ImGui::PopStyleVar();
     ImGui::PopStyleColor();
+
+    ImGui::Text("xt editor -- \"%s\"%s %2s %dL %dC %8s (%d, %d)", State.FileName, (State.IsFileDirty) ? "*" : "", "", State.RowCount, State.CharCount, "", State.CPosX, State.CPosY);
 }
 
 void Editor_AppendRow(char* String, size_t Length) {
@@ -308,8 +312,8 @@ char* StringCopy(const char* String) {
 }
 
 void Editor_Render() {
-    ImGui::Begin("Editor Demo", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
-    ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    ImGui::Begin("xt Demo Panel", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
+    ImGui::SetWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
     if (!IsInitialized) {
         Editor_Init();
@@ -370,8 +374,10 @@ void Editor_Render() {
     }
 
     ImVec2 WindowSize = ImGui::GetWindowContentRegionMax();
+    WindowSize.y -= 215;
     ImVec2 Pos = ImGui::GetCursorScreenPos();
 
     Editor_RenderRows(WindowSize, Pos);
+
     ImGui::End();
 }

@@ -138,9 +138,6 @@ int main(int ArgCount, char** Args) {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
         Editor_Render();
 
         ImGui::Render(); 
