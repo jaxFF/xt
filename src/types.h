@@ -125,8 +125,6 @@ struct string {
     umm Count;
 };
 
-#include "compiler.h"
-#include "platform.h"
 #include "shared.h"
 
 inline u32 SafeTruncateU32(u64 Value) {

@@ -1,16 +1,16 @@
-#include "types.h"
 #include <windows.h>
-#include "shared.h"
-#include "shared.cpp"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "types.h"
+#include "shared.h"
+#include "shared.cpp"
 
 #include "opengl/opengl.h"
 #include "opengl/opengl_imports.h"
 #include "opengl/renderapi_gl.h"
 #include "opengl/opengl.cpp"
-
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "../../src/opengl/renderapi_gl.h"
 #define IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
 #define IMGUI_DISABLE_WIN32_FUNCTIONS
@@ -25,6 +25,7 @@
 #include <imgui_impl_opengl3.cpp>
 
 #include "array.h"
+#include "getline.c"
 #include "editor.h"
 #include "editor.cpp"
 #include "editor_input_win32.cpp"
