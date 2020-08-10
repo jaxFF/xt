@@ -14,12 +14,32 @@ struct EditorState {
 
     EditorRow* Row;
     int RowCount;
+
+    bool IsFileDirty;
+    char* FileName;
+};
+
+enum CursorStyle_ {
+    CursorStyle_Block,
+    CursorStyle_Block_Outline,
+    CursorStyle_Line,
+    CursorStyle_Underline,
+};
+
+typedef int CursorStyle;
+
+struct EditorConfig {
+    CursorStyle Style;
+    bool LineBlink;
 };
 
 static EditorState State;
+static EditorConfig Config;
 static bool IsInitialized = false;
 static int TextStart = 7;
 static char LeftBuffer[16];
+static float BlinkStart = 0;
+static float BlinkEnd = 0;
 
 #ifdef BUILD_WIN32
 #include "editor_input_win32.cpp"
@@ -28,6 +48,9 @@ static char LeftBuffer[16];
 #endif
 
 void Editor_OpenFile(char* Filename) {
+    State.FileName = Filename;
+    State.IsFileDirty = false;
+
     FILE* File = fopen(Filename, "r");
     if (!File)
         return;
@@ -61,6 +84,9 @@ void Editor_Init() {
     Editor_OpenFile("test1.txt");
 
     IsInitialized = true;
+
+    Config.Style = CursorStyle_Block;
+    Config.LineBlink = true;
 }
 // https://en.wikipedia.org/wiki/UTF-8
 // We assume that the char is a standalone character (<128) or a leading byte of an UTF-8 code sequence (non-10xxxxxx code)
@@ -81,9 +107,12 @@ static int UTF8CharLength(char c) {
 int Editor_GetCharacterIndexByCursor(int X, int Y) {
     int Index = 0;
     int Column = 0;
-    EditorRow Line = State.Row[Y];
-    for (; Index < Line.Size && Column < X;) {
-        Index += UTF8CharLength(Line.Chars[Index]);
+    EditorRow* Line = &State.Row[Y];
+    if (Line == 0)
+        return 0;
+
+    for (; Index < Line->Size && Column < X;) {
+        Index += UTF8CharLength(Line->Chars[Index]);
         ++Column;
     }
 
@@ -139,28 +168,72 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
             Len = State.Columns;
         }
 
-        Draw->AddText(TextPos, IM_COL32(255, 255, 255, 255), Row->Chars);
+        if (Config.Style != (CursorStyle_Line))
+            Draw->AddText(TextPos, IM_COL32(255, 255, 255, 255), Row->Chars);
 
+        // Draw the cursor
         if (State.CPosY == LineNum && Focused) {
             float CursorWidth = CharAdvance.x;
+            if (Config.Style == CursorStyle_Line || Config.Style == CursorStyle_Underline)
+                CursorWidth = 1.f;
+
             int Index = Editor_GetCharacterIndexByCursor(State.CPosX, State.CPosY);
-            int CursorByCharX = (Index * CharAdvance.x);
-            int CursorByCharY = (State.CPosY * CharAdvance.y);
-
+            int ScaledCurX = (Index * CharAdvance.x);
+            int ScaledCurY = (State.CPosY * CharAdvance.y);
             ImVec2 TextStartPos = ImVec2(Pos.x + ActualTextStart, Pos.y);
-            ImVec2 CursorStart = ImVec2(TextStartPos.x + CursorByCharX, CursorByCharY + TextStartPos.y);
-            ImVec2 CursorEnd = ImVec2(TextStartPos.x + CursorByCharX + CursorWidth, CursorByCharY + TextStartPos.y + CharAdvance.y);
-            Draw->AddRectFilled(CursorStart, CursorEnd, 0xffffffff);
 
-            // Draw the char of text at the cursor in the opposite color
-            char* Char = (char*)malloc(sizeof(char) * 1);
-            Char[0] = Row->Chars[Index];
-            Draw->AddText(CursorStart, IM_COL32(0, 0, 0, 255), Char);
+            ImVec2 CursorStart, CursorEnd;
+            if (Config.Style == CursorStyle_Underline) { // We are doing underline style
+                CursorStart = ImVec2(TextStartPos.x + ScaledCurX, ((ScaledCurY + TextStartPos.y + CharAdvance.y) - CursorWidth) - 1);
+                CursorEnd = ImVec2(TextStartPos.x + ScaledCurX + CharAdvance.x, (ScaledCurY + TextStartPos.y + CharAdvance.y) - 1);
+            } else {
+                CursorStart = ImVec2(TextStartPos.x + ScaledCurX, ScaledCurY + TextStartPos.y);
+                CursorEnd = ImVec2(TextStartPos.x + ScaledCurX + CursorWidth, ScaledCurY + TextStartPos.y + CharAdvance.y);
+            }
 
+            BlinkEnd++;
+            float Elapsed = (BlinkEnd - BlinkStart);
+
+            static int OldCPosX = 0;
+            static int OldCPosY = 0;
+            if ((OldCPosX != State.CPosX || OldCPosY != State.CPosY) || Config.LineBlink == false) {
+                // Constantly render the cursor if we're in motion
+                (Config.Style == CursorStyle_Block_Outline) ? Draw->AddRect(CursorStart, CursorEnd, 0xffffffff, 1.0f) : Draw->AddRectFilled(CursorStart, CursorEnd, 0xffffffff);
+                
+                // Draw the char of text at the cursors location in the opposite color
+                char* Char = (char*)malloc(sizeof(char) * 1);
+                Char[0] = Row->Chars[Index];
+                Draw->AddText(CursorStart, IM_COL32(0, 0, 0, 255), Char);
+            } else {
+                // Blink the cursor rendering
+                static float InitStart = 108;
+                if (Elapsed > InitStart) {
+                    (Config.Style == CursorStyle_Block_Outline) ? Draw->AddRect(CursorStart, CursorEnd, 0xffffffff, 1.0f) : Draw->AddRectFilled(CursorStart, CursorEnd, 0xffffffff);
+
+                    // Draw the char of text at the cursors location in the opposite color
+                    char* Char = (char*)malloc(sizeof(char) * 1);
+                    Char[0] = Row->Chars[Index];
+                    Draw->AddText(CursorStart, IM_COL32(0, 0, 0, 255), Char);
+
+                    if (Elapsed > (InitStart + 40))
+                        BlinkStart = BlinkEnd;
+                }
+            }
+
+            OldCPosX = State.CPosX;
+            OldCPosY = State.CPosY;
+        }
+
+        // AddRect doesn't allow for a transparent rectangle so we need to write the character again :/
+        // When we use CursorStyle_Line the original text gets overwritten in a similar way.
+        if (Config.Style == CursorStyle_Block_Outline || Config.Style == CursorStyle_Line)
+            Draw->AddText(TextPos, IM_COL32(255, 255, 255, 255), Row->Chars);
+
+        {
             // DEBUG DRAW: Cursor position and index
+            int Index = Editor_GetCharacterIndexByCursor(State.CPosX, State.CPosY);
             char Temp[64];
             sprintf(Temp, "%d, %d, %d", State.CPosX, State.CPosY, Index);
-            sprintf(Temp, "%f, %f", TextStartPos.x, TextStartPos.y);
             Draw->AddText(ImVec2(Pos.x + 550, Pos.y), IM_COL32(255, 255, 255, 255), Temp);
         }
 
