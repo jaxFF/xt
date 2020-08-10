@@ -25,7 +25,6 @@
 #include "getline.c"
 #include "editor.h"
 #include "editor.cpp"
-#include "editor_input_win32.cpp"
 
 static bool GlobalRunning = false;
 

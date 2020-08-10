@@ -21,6 +21,12 @@ static bool IsInitialized = false;
 static int TextStart = 7;
 static char LeftBuffer[16];
 
+#ifdef BUILD_WIN32
+#include "editor_input_win32.cpp"
+#else
+#error "Input is not implemented for this platform"
+#endif
+
 void Editor_OpenFile(char* Filename) {
     FILE* File = fopen(Filename, "r");
     if (!File)
@@ -56,9 +62,6 @@ void Editor_Init() {
 
     IsInitialized = true;
 }
-
-void Editor_HandleInput();
-
 // https://en.wikipedia.org/wiki/UTF-8
 // We assume that the char is a standalone character (<128) or a leading byte of an UTF-8 code sequence (non-10xxxxxx code)
 static int UTF8CharLength(char c) {
