@@ -1,25 +1,9 @@
-﻿void Editor_HandleKeyboardInput() {
-    if (ImGui::IsWindowFocused()) {
-
-    }
-}
-
-void Editor_ProcessKey(ImWchar Char) {
-    switch (Char) {
-        case 'q': {
-            exit(0);
-        } break;
-    }
-}
-
-#define APPENDBUFFER_INIT {NULL, 0}
-
-struct AppendBuffer {
+﻿struct AppendBuffer {
     char* Buffer;
-    int Length;
+    size_t Length;
 };
 
-void abAppend(struct AppendBuffer *ab, const char *s, int len) {
+void abAppend(struct AppendBuffer *ab, const char *s, size_t len) {
   char *newb = (char*)realloc(ab->Buffer, ab->Length + len);
   if (newb == NULL) return;
   memcpy(&newb[ab->Length], s, len);
@@ -39,8 +23,8 @@ struct EditorRow {
 };
 
 struct EditorState {
-    int CursorPositionX;
-    int CursorPositionY;
+    int CPosX;
+    int CPosY;
 
     int Rows;
     int Columns;
@@ -49,52 +33,62 @@ struct EditorState {
     int RowCount;
 };
 
-EditorState State;
-bool IsInitialized = false;
-int TextStart = 7;
+static EditorState State;
+static bool IsInitialized = false;
+static int TextStart = 7;
+static char LeftBuffer[16];
+
+void Editor_HandleInput();
 
 void Editor_DrawRows(struct AppendBuffer* ab, ImVec2 WindowSize, ImVec2 Pos) {
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::GetStyle().Colors[ImGuiCol_FrameBg]);
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-    ImGui::BeginChild("Editor Child", WindowSize, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_HorizontalScrollbar);
-
+    //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImGui::BeginChild("Editor", WindowSize);
     ImGui::PushAllowKeyboardFocus(true);
 
-    auto drawList = ImGui::GetWindowDrawList();
+    // Handle input here or else we can't grab the childs input
+    Editor_HandleInput();
 
-    auto ScrollX = ImGui::GetScrollX();
-	auto ScrollY = ImGui::GetScrollY();
-
-    float FontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "🗻", nullptr, nullptr).x; // Get the size of the tallest char
+    static float FontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x; // Get the size of the tallest char
     ImVec2 CharAdvance = ImVec2(FontSize, ImGui::GetTextLineHeightWithSpacing() * 1.0f);
+
+    bool Focused = ImGui::IsWindowFocused();
+    float ScrollX = ImGui::GetScrollX();
+	float ScrollY = ImGui::GetScrollY();
 
     int LineNum = (int)floor(ScrollY / CharAdvance.y);
     int LineMax = Maximum(0, Minimum(State.RowCount - 1, LineNum + (int)floor((ScrollY + WindowSize.y) / CharAdvance.y)));
 
+    int ActualTextStart = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x + TextStart;
+
+    ImDrawList* Draw = ImGui::GetWindowDrawList();
     while (LineNum <= LineMax) {
         ImVec2 LineStartPos = ImVec2(Pos.x, Pos.y + LineNum * CharAdvance.y);
-        ImVec2 TextPos = ImVec2(LineStartPos.x + CharAdvance.x * (TextStart + 1), LineStartPos.y);
+        ImVec2 TextPos = ImVec2(LineStartPos.x + ActualTextStart, LineStartPos.y);
 
-        static char buf[16];
-        snprintf(buf, 16, "%*d ", (TextStart - 1), LineNum + 1);
-
-        int LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf, nullptr, nullptr).x;
-        drawList->AddText(ImVec2(LineStartPos.x, LineStartPos.y), IM_COL32(255, 255, 255, 255), buf);
+        snprintf(LeftBuffer, 16, "%*d ", (TextStart - 1), LineNum + 1);
+        int LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x;
+        Draw->AddText(ImVec2(LineStartPos.x, LineStartPos.y), IM_COL32(255, 255, 255, 255), LeftBuffer);
 
         ImVec2 Start = ImVec2(LineStartPos.x + ScrollX, LineStartPos.y);
         ImVec2 End = ImVec2(Start.x + ScrollX + WindowSize.x, Start.y + CharAdvance.y);
-        drawList->AddRectFilled(Start, End, 0x141414);
-        drawList->AddRect(Start, End, 0x40808080, 1.0f);
+        Draw->AddRectFilled(Start, End, 0x141414);
+        Draw->AddRect(Start, End, 0x40808080, 1.0f);
 
         EditorRow* Row = &State.Row[LineNum];
 
-        int Len = Row->Size;
+        size_t Len = Row->Size;
         if (Len > State.Columns) {
             Len = State.Columns;
         }
 
         abAppend(ab, Row->Chars, Len);
-        drawList->AddText(TextPos, IM_COL32(255, 255, 255, 255), Row->Chars);
+        Draw->AddText(TextPos, IM_COL32(255, 255, 255, 255), Row->Chars);
+
+        if (State.CPosX == LineNum && Focused) {
+            float CursorWidth = 1.f;
+            
+        }
 
         LineNum++;
     }
@@ -103,16 +97,14 @@ void Editor_DrawRows(struct AppendBuffer* ab, ImVec2 WindowSize, ImVec2 Pos) {
         ImVec2 LineStartPos = ImVec2(Pos.x, Pos.y + LineNum * CharAdvance.y);
         ImVec2 TextPos = ImVec2(LineStartPos.x + CharAdvance.x * (TextStart + 1), LineStartPos.y);
 
-        static char buf[16];
-        snprintf(buf, 16, "%*s ", (TextStart - 1), "~");
-
-        int LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf, nullptr, nullptr).x;
-        drawList->AddText(ImVec2(LineStartPos.x, LineStartPos.y), IM_COL32(255, 255, 255, 255), buf);
+        snprintf(LeftBuffer, 16, "%*s ", (TextStart - 1), "~");
+        int LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x;
+        Draw->AddText(ImVec2(LineStartPos.x, LineStartPos.y), IM_COL32(255, 255, 255, 255), LeftBuffer);
 
         ImVec2 Start = ImVec2(LineStartPos.x + ScrollX, LineStartPos.y);
         ImVec2 End = ImVec2(Start.x + ScrollX + WindowSize.x, Start.y + CharAdvance.y);
-        drawList->AddRectFilled(Start, End, 0x141414);
-        drawList->AddRect(Start, End, 0x40808080, 1.0f);
+        Draw->AddRectFilled(Start, End, 0x141414);
+        Draw->AddRect(Start, End, 0x40808080, 1.0f);
 
         LineNum++;
 
@@ -121,7 +113,7 @@ void Editor_DrawRows(struct AppendBuffer* ab, ImVec2 WindowSize, ImVec2 Pos) {
 
     ImGui::PopAllowKeyboardFocus();
     ImGui::EndChild();
-    ImGui::PopStyleVar();
+    //ImGui::PopStyleVar();
     ImGui::PopStyleColor();
 }
 
@@ -159,8 +151,8 @@ void Editor_OpenFile(char* Filename) {
 }
 
 void Editor_Init() {
-    State.CursorPositionX = 0;
-    State.CursorPositionY = 0;
+    State.CPosX = 0;
+    State.CPosY = 0;
 
     ImVec2 WindowSize = ImGui::GetWindowContentRegionMax();
     float FontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
@@ -177,7 +169,7 @@ void Editor_Init() {
 }
 
 void Editor_Render() {
-    ImGui::Begin("Editor Demo", nullptr, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
+    ImGui::Begin("Editor Demo", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
 
     if (!IsInitialized) {
@@ -187,9 +179,7 @@ void Editor_Render() {
     ImVec2 WindowSize = ImGui::GetWindowContentRegionMax();
     ImVec2 Pos = ImGui::GetCursorScreenPos();
 
-    Editor_HandleKeyboardInput();
-
-    struct AppendBuffer ab = APPENDBUFFER_INIT;
+    struct AppendBuffer ab = { NULL, 0 };
     Editor_DrawRows(&ab, WindowSize, Pos);
     ImGui::End();
 }

@@ -117,10 +117,6 @@ DefineGLFunction(glBindSampler);
 // OpenGL 4.6
 DefineGLFunction(glScissor);
 
-struct gl_functions {
-
-};
-
 struct gl_info {
     char* Vendor;
     char* Renderer;

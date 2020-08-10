@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libfstd/containers/array.h"
-
 #include "opengl/opengl.h"
 #include "opengl/opengl_imports.h"
 #include "opengl/renderapi_gl.h"
@@ -26,8 +24,10 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_opengl3.cpp>
 
+#include "array.h"
 #include "editor.h"
 #include "editor.cpp"
+#include "editor_input_win32.cpp"
 
 static bool GlobalRunning = false;
 

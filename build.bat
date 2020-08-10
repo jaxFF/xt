@@ -28,12 +28,12 @@ IF NOT "%1"=="" (
 )
 
 IF "%BuildType%"=="" (set BuildType=debug)
-IF "%Compiler%"=="" (set Compiler=clang)
+IF "%Compiler%"=="" (set Compiler=msvc)
 IF "%BuildType%"=="clean" (goto clean)
 
-set CommonWarningsMSVC=-wd4302 -wd4311 -wd4201 -wd4100 -wd4189 -wd4505 -wd4164 -wd4127 -wd4018 -wd4244 -wd4551
-set CommonWarningsClang=-Wno-null-dereference -Wno-writable-strings -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-bool-conversion -Wno-unused-command-line-argument -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-missing-braces -ferror-limit=2000 %CommonWarningsMSVC%
-set CommonCompilerFlags=-DBUILD_WIN32=1 -I..\..\src -D_CRT_SECURE_NO_WARNINGS -fp:fast -fp:except- -nologo -Gm- -GR- -EHsc- -EHa- -Od -Oi -WX -W3 -FC -Zi -GS- -Gs9999999
+set CommonWarningsMSVC=-wd4302 -wd4311 -wd4201 -wd4100 -wd4189 -wd4505 -wd4164 -wd4127 -wd4018 -wd4244 -wd4146
+set CommonWarningsClang=-Wno-writable-strings -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-bool-conversion -Wno-unused-command-line-argument -Wno-constant-logical-operand -Wno-unknown-pragmas -Wno-missing-braces -Wno-varargs -Wno-unused-function -Wno-ignored-attributes %CommonWarningsMSVC%
+set CommonCompilerFlags=-DBUILD_WIN32=1  -I..\..\src -fp:fast -fp:except- -nologo -Gm- -GR- -EHsc- -EHa- -MP -Od -Oi -FC -Zi -GS- -Gs9999999 -WX -W3 -D_CRT_SECURE_NO_WARNINGS
 set CommonLinkerFlags= -nologo -incremental:no -opt:ref user32.lib gdi32.lib winmm.lib kernel32.lib shlwapi.lib Imm32.lib Xinput.lib Shell32.lib opengl32.lib Dbghelp.lib
 
 IF "%BuildType%"=="release" (

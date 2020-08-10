@@ -214,7 +214,7 @@ bool GLInitContext(void* _Handle) {
 
 	if (wglMakeCurrent(WindowDC, OpenGLRC)) {
 		// note: We failed to get wglSwapLayerBuffers, so fallback!
-		if (!wglSwapLayerBuffers) {
+		//if (!wglSwapLayerBuffers) {
 			// note: Try grabbing wglSwapLayerBuffers directly from opengl32.dll
 			HMODULE GLLibrary = (HMODULE)LoadLibraryExA("opengl32.dll", nullptr, 0);
 			//wglSwapLayerBuffers = (wgl_swap_layer_buffers*)GetProcAddress(GLLibrary, "wglSwapLayerBuffers");
@@ -226,7 +226,7 @@ bool GLInitContext(void* _Handle) {
 				//SwapBuffers = (swap_buffers*)GetProcAddress(GDILibrary, "SwapBuffers");
 				FreeLibrary(GDILibrary);
 			//}
-		};
+		//};
 
 		printf("Sucessfully initalized WGL context\n");
 		return true;
@@ -237,8 +237,8 @@ bool GLInitContext(void* _Handle) {
 }
 
 bool GLSwapBuffers() {
-	if (!wglSwapLayerBuffers)
-		return SwapBuffers(WindowDC);
-	else
+	//if (!wglSwapLayerBuffers)
+		//return SwapBuffers(WindowDC);
+	//else
 		return wglSwapLayerBuffers(WindowDC, WGL_SWAP_MAIN_PLANE);
 }
