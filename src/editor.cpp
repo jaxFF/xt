@@ -275,12 +275,98 @@ void Editor_AppendRow(char* String, size_t Length) {
     State.RowCount++;
 }
 
+bool StringsMatch(char* A, char* B) {
+    while (*A && *B) {
+        if (*A != *B){
+            return false;
+        }
+
+        ++A;
+        ++B;
+    }
+
+    if (*A != *B){
+        return false;
+    } else {
+        return true;
+    }
+}
+
+int StringLength(const char* String) {
+    int Count = 0;
+    while (*String++) {
+        ++Count;
+    }
+    return Count;
+}
+
+char* StringCopy(const char* String) {
+    char* Result = (char*)malloc(sizeof(char) * (StringLength(String) + 1));
+    memcpy(Result, String, sizeof(char) * (StringLength(String) + 1));
+
+    return Result;
+}
+
 void Editor_Render() {
     ImGui::Begin("Editor Demo", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
 
     if (!IsInitialized) {
         Editor_Init();
+    }
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Quit", "Alt-F4, CTRL-Q")) {
+                exit(0);
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::MenuItem("Cursor Blink", NULL, &Config.LineBlink)) {
+                ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+                ImGui::PopItemFlag();
+            }
+
+            {
+                const char* Items[] = { "Block", "Block Outline", "Line", "Underline" };
+                static char* CurrentItem = NULL;
+                ImGuiComboFlags flags = ImGuiComboFlags_NoArrowButton;
+
+                ImGuiStyle& Style = ImGui::GetStyle();
+
+                ImGui::Text("Cursor Style");
+                ImGui::SameLine(0, Style.ItemInnerSpacing.x);
+                ImGui::PushItemWidth(ImGui::CalcItemWidth() - Style.ItemInnerSpacing.x- ImGui::GetFrameHeight());
+                if (ImGui::BeginCombo("##custom combo", CurrentItem, ImGuiComboFlags_NoArrowButton)) {
+                    for (int n = 0; n < IM_ARRAYSIZE(Items); n++) {
+                        bool is_selected = (CurrentItem == Items[n]);
+                        if (ImGui::Selectable(Items[n], is_selected)) {
+                            CurrentItem = StringCopy(Items[n]);
+                            if (StringsMatch(CurrentItem, "Block")) {
+                                Config.Style = CursorStyle_Block;
+                            }
+                            else if (StringsMatch(CurrentItem, "Block Outline")) {
+                                Config.Style = CursorStyle_Block_Outline;
+                            }
+                            else if (StringsMatch(CurrentItem, "Line")) {
+                                Config.Style = CursorStyle_Line;
+                            }
+                            else if (StringsMatch(CurrentItem, "Underline")) {
+                                Config.Style = CursorStyle_Underline;
+                            }
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::PopItemWidth();
+            }
+
+            ImGui::EndMenu();
+        }
+
+	    ImGui::EndMenuBar();
     }
 
     ImVec2 WindowSize = ImGui::GetWindowContentRegionMax();
