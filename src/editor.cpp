@@ -1,5 +1,4 @@
-﻿#include "types.h"
-
+﻿
 struct EditorRow {
     char* Chars;
     size_t Size;
@@ -34,13 +33,13 @@ struct EditorConfig {
     bool LineBlink;
 };
 
-static EditorState State;
-static EditorConfig Config;
-static bool IsInitialized = false;
-static int TextStart = 7;
-static char LeftBuffer[16];
-static float BlinkStart = 0;
-static float BlinkEnd = 0;
+global EditorState State;
+global EditorConfig Config;
+global bool IsInitialized = false;
+global int TextStart = 7;
+global char LeftBuffer[16];
+global float BlinkStart = 0;
+global float BlinkEnd = 0;
 
 #ifdef BUILD_WIN32
 #include "editor_input_win32.cpp"
@@ -83,7 +82,7 @@ void Editor_Init() {
 
     State.Row = (EditorRow*)malloc(sizeof(EditorRow));
 
-    Editor_OpenFile("../src/editor.cpp");
+    Editor_OpenFile("test1.txt");
 
     IsInitialized = true;
 
@@ -92,7 +91,7 @@ void Editor_Init() {
 }
 // https://en.wikipedia.org/wiki/UTF-8
 // We assume that the char is a standalone character (<128) or a leading byte of an UTF-8 code sequence (non-10xxxxxx code)
-static int UTF8CharLength(char c) {
+global int UTF8CharLength(char c) {
 	if ((c & 0xFE) == 0xFC)
 		return 6;
 	if ((c & 0xFC) == 0xF8)
@@ -136,7 +135,7 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
     if (State.CPosY < 0)
         State.CPosY = 0;
 
-    static float FontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x; // Get the size of the tallest char
+    global float FontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x; // Get the size of the tallest char
     ImVec2 CharAdvance = ImVec2(FontSize, ImGui::GetTextLineHeightWithSpacing() * 1.0f);
 
     bool Focused = ImGui::IsWindowFocused();
@@ -196,8 +195,8 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
             BlinkEnd++;
             float Elapsed = (BlinkEnd - BlinkStart);
 
-            static int OldCPosX = 0;
-            static int OldCPosY = 0;
+            global int OldCPosX = 0;
+            global int OldCPosY = 0;
             if ((OldCPosX != State.CPosX || OldCPosY != State.CPosY) || Config.LineBlink == false) {
                 // Constantly render the cursor if we're in motion
                 (Config.Style == CursorStyle_Block_Outline) ? Draw->AddRect(CursorStart, CursorEnd, 0xffffffff, 1.0f) : Draw->AddRectFilled(CursorStart, CursorEnd, 0xffffffff);
@@ -208,7 +207,7 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
                 Draw->AddText(CursorStart, IM_COL32(0, 0, 0, 255), Char);
             } else {
                 // Blink the cursor rendering
-                static float InitStart = 108;
+                global float InitStart = 108;
                 if (Elapsed > InitStart) {
                     (Config.Style == CursorStyle_Block_Outline) ? Draw->AddRect(CursorStart, CursorEnd, 0xffffffff, 1.0f) : Draw->AddRectFilled(CursorStart, CursorEnd, 0xffffffff);
 
@@ -335,7 +334,7 @@ void Editor_Render() {
 
             {
                 const char* Items[] = { "Block", "Block Outline", "Line", "Underline" };
-                static char* CurrentItem = NULL;
+                global char* CurrentItem = NULL;
                 ImGuiComboFlags flags = ImGuiComboFlags_NoArrowButton;
 
                 ImGuiStyle& Style = ImGui::GetStyle();

@@ -7,14 +7,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#ifdef BUILD_WIN32 // MSVC
-#define API_EXPORT extern "C" __declspec(dllexport)
-#define API_IMPORT extern "C" __declspec(dllimport)
-#elif BUILD_LINUX | BUILD_MACOS // GCC or Clang
-#define API_EXPORT extern "C" __attribute__((visibility("default")))
-#define API_IMPORT
-#endif
-
 #define global static
 
 typedef unsigned int uint;
@@ -72,7 +64,6 @@ typedef intptr_t smm;
 #define Terabytes(Value) (Gigabytes((uint64)Value) * 1024LL)
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
-// todo(jax): swap, min, max ... macros???
 
 #define AlignPow2(Value, Alignment) ((Value + ((Alignment) - 1)) & ~((Alignment) - 1))
 #define Align4(Value) ((Value + 3) & ~3)
@@ -86,26 +77,7 @@ inline b32 IsPow2(u32 Value) {
     return ((Value & ~(Value - 1)) == Value);
 }
 
-// ANSI Color Codes
-#define BLACK "\33[0;30m"
-#define RED "\33[0;31m"
-#define GREEN "\33[0;32m"
-#define YELLOW "\33[0;33m"
-#define BLUE "\33[0;34m"
-#define MAGENTA "\33[0;35m"
-#define CYAN "\33[0;36m"
-#define WHITE "\33[0;37m"
-#define LIGHT_GRAY "\33[0;37m"
-#define DARK_GRAY "\33[1;30m"
-#define BOLD_BLACK "\33[1;30m"
-#define BOLD_RED "\33[1;31m"
-#define BOLD_GREEN "\33[1;32m"
-#define BOLD_YELLOW "\33[1;33m"
-#define BOLD_BLUE "\33[1;34m"
-#define BOLD_MAGENTA "\33[1;35m"
-#define BOLD_CYAN "\33[1;36m"
-#define BOLD_WHITE "\33[1;37m"
-#define RESET "\33[0m"
+#define MemoryCopy(Dest, Src, Size) memmove((Dest), (Src), (Size))
 
 // note(jax): Platform-independent way to perform an assertion.
 // Flat out writes to zero memory to crash the program.
@@ -142,72 +114,6 @@ inline u16 SafeTruncateU16(u32 Value) {
 inline u8 SafeTruncateU8(u64 Value) {
     Assert(Value <= 0xFF);
     u8 Result = (u8)Value;
-    return Result;
-}
-
-inline s32 SafeTruncateS32(s64 Value) {
-    if (Value >> 63) {
-        b32 IsSafeOperation = !(!(Value >> 32) && 0xffffffff);
-        if (!IsSafeOperation) {
-            printf("SafeTruncateS32: Performing unsafe truncation on '%lld'\n", Value);
-        }
-        return (s32)Value;
-    } else {
-        b32 IsSafeOperation = !((Value >> 32) && 0xffffffff);
-        if (!IsSafeOperation) {
-            printf("SafeTruncateS32: Performing unsafe truncation on '%lld'\n", Value);
-        }
-        return (s32)Value;
-    }
-}
-
-inline s16 SafeTruncateS16(s32 Value) {
-    if (Value >> 31) {
-        b32 IsSafeOperation = !(!(Value >> 16) && 0xffff);
-        if (!IsSafeOperation) {
-            printf("SafeTruncateS16: Performing unsafe truncation on '%d'\n", Value);
-        }
-        return (s16)Value;
-    } else {
-        b32 IsSafeOperation = !((Value >> 16) && 0xffff);
-        if (!IsSafeOperation) {
-            printf("SafeTruncateS16: Performing unsafe truncation on '%d'\n", Value);
-        }
-        return (s16)Value;
-    }
-}
-
-inline s8 SafeTruncateS8(s16 Value) {
-    if (Value >> 15) {
-        b32 IsSafeOperation = !(!(Value >> 8) && 0xff);
-        if (!IsSafeOperation) {
-            printf("SafeTruncateS8: Performing unsafe truncation on '%d'\n", Value);
-        }
-        return (s8)Value;
-    } else {
-        b32 IsSafeOperation = !((Value >> 8) && 0xff);
-        if (!IsSafeOperation) {
-            printf("SafeTruncateS8: Performing unsafe truncation on '%d'\n", Value);
-        }
-        return (s8)Value;
-    }
-}
-
-//
-// note: Scalar operations
-//
-
-// todo(jax): These will eventually go into mathlib
-
-inline real32 Square(real32 A) {
-    real32 Result = A*A;
-
-    return Result;
-}
-
-inline real32 Lerp(real32 A, real32 t, real32 B){
-    real32 Result = (1.0f - t)*A + t*B;
-
     return Result;
 }
 

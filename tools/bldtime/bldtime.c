@@ -194,7 +194,7 @@
    
    $
 
-   aetime works under the same premise as Casey Muratori's ctime under
+   btime works under the same premise as Casey Muratori's ctime under
    the public domain. It's a small utility that allows you to time how 
    long your machine spends building your project. It works in the same 
    manner as a begin/end block in your typical profiler.
@@ -211,13 +211,14 @@
    ------------
 
    On the first line of your build script, write
-        aetime --begin <project-name>.aet
+        btime --begin <project-name-file>
    then on the last line, write
-        aetime --end <project-name>.aet
+        btime --end <project-name-file>
    and the program will output how many seconds it took to build your project!
 
    Also if you must debug the project, you can append a '-v' flag to the end
    of the argument list for additional debug output into the console.
+   File extension may be arbitrary.
 
    ======================================================================== */
 
@@ -232,7 +233,7 @@
 #define GenerateMagic(a, b, c, d) (((u32)(a) << 0) | ((u32)(b) << 8) | ((u32)(c) << 16) | ((u32)(d) << 24))
 
 #pragma pack(push, 1)
-#define AET_MAGIC_VALUE GenerateMagic('a', 'e', 't', 'c')
+#define TIMER_MAGIC GenerateMagic('b', 'l', 'd', 't')
 typedef struct timer_file_header {
     u32 Magic;
 } timer_file_header;
@@ -289,8 +290,8 @@ global f32 GlobalFrequency;
 #define COUNTERTOS    COUNTERTOMS / 1000.f
 
 global void Usage(char** Args) {
-    fprintf(stderr, "Usage: %s --begin <file>.aet [-v|--v|--verbose|-verbose]\n", Args[0]);
-    fprintf(stderr, "       %s --end <file>.aet [-v|--v|--verbose|-verbose]\n", Args[0]);
+    fprintf(stderr, "Usage: %s --begin <file> [-v|--v|--verbose|-verbose]\n", Args[0]);
+    fprintf(stderr, "       %s --end <file> [-v|--v|--verbose|-verbose]\n", Args[0]);
 }
 
 // This function assumes FileName is a full path with an extension
@@ -347,7 +348,7 @@ int main(int ArgCount, char** Args) {
                 }
 
                 timer_file_header Header = {0};
-                Header.Magic = AET_MAGIC_VALUE;
+                Header.Magic = TIMER_MAGIC;
                 fwrite(&Header, sizeof(Header), 1, Dest);
 
                 LARGE_INTEGER Start;
