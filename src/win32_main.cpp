@@ -11,8 +11,10 @@
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "opengl/opengl.h"
 #define IMGUI_IMPL_WIN32_DISABLE_GAMEPAD
 #define IMGUI_DISABLE_WIN32_FUNCTIONS
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <imgui.cpp>
+#include <imgui_tables.cpp>
 #include <imgui_demo.cpp>
 #include <imgui_draw.cpp>
 #include <imgui_widgets.cpp>
@@ -21,15 +23,13 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_opengl3.cpp>
 
-#include "array.h"
-#include "getline.c"
-#include "editor.h"
-#include "editor.cpp"
-
 static bool GlobalRunning = false;
 
+#include "getline.c"
+#include "editor.cpp"
+
 LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam) {
-    ImGui_ImplWin32_WndProcHandler(Window, Message, wParam, lParam);
+    if (ImGui_ImplWin32_WndProcHandler(Window, Message, wParam, lParam)) return true;
 
 	LRESULT Result = 0;
 
@@ -64,7 +64,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message, WPARAM wPara
     } break;
 
     default: {
-        Result = DefWindowProcA(Window, Message, wParam, lParam);
+        Result = DefWindowProc(Window, Message, wParam, lParam);
     } break;
 	}
 
@@ -138,7 +138,13 @@ int main(int ArgCount, char** Args) {
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
+        ImGui::Begin("xt Demo Panel", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
+        ImGui::SetWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
+
+
         Editor_Render();
+
+        ImGui::End();
 
         ImGui::Render(); 
         glClearColor(0.f, 0.f, 0.f, 0.f);

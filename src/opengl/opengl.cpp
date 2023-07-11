@@ -7,6 +7,7 @@
 #define DefineGLFunction(Func) global _##Func* Func
 
 DefineGLFunction(glGetString);
+DefineGLFunction(glGetStringi);
 
 // OpenGL 1.0
 DefineGLFunction(glClear);
@@ -104,6 +105,8 @@ DefineGLFunction(glGetProgramInfoLog);
 DefineGLFunction(glShaderSource);
 DefineGLFunction(glCreateShader);
 DefineGLFunction(glCreateProgram);
+DefineGLFunction(glBufferSubData);
+DefineGLFunction(glIsProgram);
 
 // OpenGL 3.0
 DefineGLFunction(glBindVertexArray);
@@ -191,6 +194,7 @@ global void* _GLGetFunction(char* Func) {
 
 void GLLoadFunctions() {
 	GLGetFunction(glGetString);
+    GLGetFunction(glGetStringi);
 
     GLFindAPIVersions();
     if (GL_VERSION_1_0) {
@@ -288,6 +292,8 @@ void GLLoadFunctions() {
         GLGetFunction(glShaderSource);
         GLGetFunction(glCreateShader);
         GLGetFunction(glCreateProgram);
+        GLGetFunction(glBufferSubData);
+        GLGetFunction(glIsProgram);
     } if (GL_VERSION_2_1) {
     } if (GL_VERSION_3_0) {
         GLGetFunction(glBindVertexArray);

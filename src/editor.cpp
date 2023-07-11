@@ -1,19 +1,23 @@
-﻿
+﻿struct XtLine {
+    u32 Start;
+    u32 End;
+};
+
 struct EditorRow {
     char* Chars;
     size_t Size;
 };
 
 struct EditorState {
-    int CPosX;
-    int CPosY;
+    u32 CPosX;
+    u32 CPosY;
 
-    int Rows;
-    int Columns;
+    u32 Rows;
+    u32 Columns;
 
     EditorRow* Row;
-    int RowCount;
-    int CharCount;
+    u32 RowCount;
+    u32 CharCount;
 
     bool IsFileDirty;
     char* FileName;
@@ -26,7 +30,9 @@ enum CursorStyle_ {
     CursorStyle_Underline,
 };
 
-typedef int CursorStyle;
+typedef u32 CursorStyle;
+
+typedef u32 XtCursor;
 
 struct EditorConfig {
     CursorStyle Style;
@@ -36,16 +42,49 @@ struct EditorConfig {
 global EditorState State;
 global EditorConfig Config;
 global bool IsInitialized = false;
-global int TextStart = 7;
+global u32 TextStart = 7;
 global char LeftBuffer[16];
 global float BlinkStart = 0;
 global float BlinkEnd = 0;
 
-#ifdef BUILD_WIN32
-#include "editor_input_win32.cpp"
-#else
-#error "Input is not implemented for this platform"
-#endif
+
+
+void Editor_AppendRow(char* String, size_t Length);
+void Editor_RowInsertChar(EditorRow* Row, u32 At, int Char);
+void Editor_InsertChar(u32 Char);
+void Editor_HandleInput();
+
+bool StringsMatch(char* A, char* B) {
+    while (*A && *B) {
+        if (*A != *B){
+            return false;
+        }
+
+        ++A;
+        ++B;
+    }
+
+    if (*A != *B){
+        return false;
+    } else {
+        return true;
+    }
+}
+
+u32 StringLength(const char* String) {
+    u32 Count = 0;
+    while (*String++) {
+        ++Count;
+    }
+    return Count;
+}
+
+char* StringCopy(const char* String) {
+    char* Result = (char*)malloc(sizeof(char) * (StringLength(String) + 1));
+    memcpy(Result, String, sizeof(char) * (StringLength(String) + 1));
+
+    return Result;
+}
 
 void Editor_OpenFile(char* Filename) {
     State.FileName = Filename;
@@ -91,7 +130,7 @@ void Editor_Init() {
 }
 // https://en.wikipedia.org/wiki/UTF-8
 // We assume that the char is a standalone character (<128) or a leading byte of an UTF-8 code sequence (non-10xxxxxx code)
-global int UTF8CharLength(char c) {
+global u32 UTF8CharLength(char c) {
 	if ((c & 0xFE) == 0xFC)
 		return 6;
 	if ((c & 0xFC) == 0xF8)
@@ -105,9 +144,9 @@ global int UTF8CharLength(char c) {
 	return 1;
 }
 
-int Editor_GetCharacterIndexByCursor(int X, int Y) {
-    int Index = 0;
-    int Column = 0;
+u32 Editor_GetCharacterIndexByCursor(int X, int Y) {
+    u32 Index = 0;
+    u32 Column = 0;
     EditorRow* Line = &State.Row[Y];
     if (Line == 0)
         return 0;
@@ -126,7 +165,6 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
     ImGui::BeginChild("Editor", WindowSize, true);
     ImGui::PushAllowKeyboardFocus(true);
 
-    // Handle input here or else we can't grab the childs input
     Editor_HandleInput();
 
     if (State.CPosX < 0)
@@ -142,10 +180,10 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
     float ScrollX = ImGui::GetScrollX();
 	float ScrollY = ImGui::GetScrollY();
 
-    int LineNum = (int)floor(ScrollY / CharAdvance.y);
-    int LineMax = Maximum(0, Minimum(State.RowCount - 1, LineNum + (int)floor((ScrollY + WindowSize.y) / CharAdvance.y)));
+    u32 LineNum = (int)floor(ScrollY / CharAdvance.y);
+    u32 LineMax = Maximum(0, Minimum(State.RowCount - 1, LineNum + (int)floor((ScrollY + WindowSize.y) / CharAdvance.y)));
 
-    int ActualTextStart = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x + TextStart;
+    u32 ActualTextStart = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x + TextStart;
 
     ImDrawList* Draw = ImGui::GetWindowDrawList();
 
@@ -154,7 +192,7 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
         ImVec2 TextPos = ImVec2(LineStartPos.x + ActualTextStart, LineStartPos.y);
 
         snprintf(LeftBuffer, 16, "%*d ", (TextStart - 1), LineNum + 1);
-        int LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x;
+        u32 LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x;
         Draw->AddText(ImVec2(LineStartPos.x, LineStartPos.y), IM_COL32(255, 255, 255, 255), LeftBuffer);
 
         ImVec2 Start = ImVec2(LineStartPos.x + ScrollX, LineStartPos.y);
@@ -178,9 +216,9 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
             if (Config.Style == CursorStyle_Line || Config.Style == CursorStyle_Underline)
                 CursorWidth = 1.f;
 
-            int Index = Editor_GetCharacterIndexByCursor(State.CPosX, State.CPosY);
-            int ScaledCurX = (Index * CharAdvance.x);
-            int ScaledCurY = (State.CPosY * CharAdvance.y);
+            u32 Index = Editor_GetCharacterIndexByCursor(State.CPosX, State.CPosY);
+            u32 ScaledCurX = (Index * CharAdvance.x);
+            u32 ScaledCurY = (State.CPosY * CharAdvance.y);
             ImVec2 TextStartPos = ImVec2(Pos.x + ActualTextStart, Pos.y);
 
             ImVec2 CursorStart, CursorEnd;
@@ -195,8 +233,8 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
             BlinkEnd++;
             float Elapsed = (BlinkEnd - BlinkStart);
 
-            global int OldCPosX = 0;
-            global int OldCPosY = 0;
+            global u32 OldCPosX = 0;
+            global u32 OldCPosY = 0;
             if ((OldCPosX != State.CPosX || OldCPosY != State.CPosY) || Config.LineBlink == false) {
                 // Constantly render the cursor if we're in motion
                 (Config.Style == CursorStyle_Block_Outline) ? Draw->AddRect(CursorStart, CursorEnd, 0xffffffff, 1.0f) : Draw->AddRectFilled(CursorStart, CursorEnd, 0xffffffff);
@@ -232,7 +270,7 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
 
         {
             // DEBUG DRAW: Cursor position and index
-            int Index = Editor_GetCharacterIndexByCursor(State.CPosX, State.CPosY);
+            u32 Index = Editor_GetCharacterIndexByCursor(State.CPosX, State.CPosY);
             char Temp[64];
             sprintf(Temp, "%d, %d, %d", State.CPosX, State.CPosY, Index);
             Draw->AddText(ImVec2(Pos.x + 550, Pos.y), IM_COL32(255, 255, 255, 255), Temp);
@@ -246,7 +284,7 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
         ImVec2 TextPos = ImVec2(LineStartPos.x + CharAdvance.x * (TextStart + 1), LineStartPos.y);
 
         snprintf(LeftBuffer, 16, "%*s ", (TextStart - 1), "~");
-        int LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x;
+        u32 LineNumWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, LeftBuffer, nullptr, nullptr).x;
         Draw->AddText(ImVec2(LineStartPos.x, LineStartPos.y), IM_COL32(255, 255, 255, 255), LeftBuffer);
 
         ImVec2 Start = ImVec2(LineStartPos.x + ScrollX, LineStartPos.y);
@@ -266,11 +304,10 @@ void Editor_RenderRows(ImVec2 WindowSize, ImVec2 Pos) {
 
     ImGui::Text("xt editor -- \"%s\"%s %2s %dL %dC %8s (%d, %d)", State.FileName, (State.IsFileDirty) ? "*" : "", "", State.RowCount, State.CharCount, "", State.CPosX, State.CPosY);
 }
-
 void Editor_AppendRow(char* String, size_t Length) {
     State.Row = (EditorRow*)realloc(State.Row, sizeof(EditorRow) * (State.RowCount + 1));
 
-    int At = State.RowCount;
+    u32 At = State.RowCount;
     State.Row[At].Size = Length;
     State.Row[At].Chars = (char*)malloc(Length + 1);
     memcpy(State.Row[At].Chars, String, Length);
@@ -278,45 +315,45 @@ void Editor_AppendRow(char* String, size_t Length) {
     State.RowCount++;
 }
 
-bool StringsMatch(char* A, char* B) {
-    while (*A && *B) {
-        if (*A != *B){
-            return false;
-        }
-
-        ++A;
-        ++B;
+void Editor_RowInsertChar(EditorRow* Row, u32 At, int Char) {
+    if (At < 0 || At > Row->Size) {
+        At = (u32)Row->Size;
     }
 
-    if (*A != *B){
-        return false;
-    } else {
-        return true;
-    }
+    Row->Chars = (char*)realloc(Row->Chars, Row->Size + 2);
+    MemoryCopy(&Row->Chars[At + 1], &Row->Chars[At], Row->Size - At + 1);
+    Row->Size++;
+    Row->Chars[At] = Char;
 }
 
-int StringLength(const char* String) {
-    int Count = 0;
-    while (*String++) {
-        ++Count;
+void Editor_InsertChar(u32 Char) {
+    if (State.CPosY == State.RowCount) {
+        Editor_AppendRow("", 0);
     }
-    return Count;
+    Editor_RowInsertChar(&State.Row[State.CPosY], State.CPosX, Char);
+    State.CPosX++;
 }
 
-char* StringCopy(const char* String) {
-    char* Result = (char*)malloc(sizeof(char) * (StringLength(String) + 1));
-    memcpy(Result, String, sizeof(char) * (StringLength(String) + 1));
+void Editor_RowDeleteChar(EditorRow* Row, u32 At) {
+    if (At >= Row->Size) return;
+    MemoryCopy(&Row->Chars[At], &Row->Chars[At + 1], Row->Size - At - 1);
+    Row->Size--;
+}
 
-    return Result;
+void Editor_DeleteChar() {
+    if (State.CPosY == State.RowCount) return;
+
+    if (State.CPosX > 0) {
+        Editor_RowDeleteChar(&State.Row[State.CPosY], State.CPosX-1);
+        State.CPosX--;
+    }
 }
 
 void Editor_Render() {
-    ImGui::Begin("xt Demo Panel", nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
-    ImGui::SetWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
-
     if (!IsInitialized) {
         Editor_Init();
     }
+
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Quit", "Alt-F4, CTRL-Q")) {
@@ -343,7 +380,7 @@ void Editor_Render() {
                 ImGui::SameLine(0, Style.ItemInnerSpacing.x);
                 ImGui::PushItemWidth(ImGui::CalcItemWidth() - Style.ItemInnerSpacing.x- ImGui::GetFrameHeight());
                 if (ImGui::BeginCombo("##custom combo", CurrentItem, ImGuiComboFlags_NoArrowButton)) {
-                    for (int n = 0; n < IM_ARRAYSIZE(Items); n++) {
+                    for (u32 n = 0; n < IM_ARRAYSIZE(Items); n++) {
                         bool is_selected = (CurrentItem == Items[n]);
                         if (ImGui::Selectable(Items[n], is_selected)) {
                             CurrentItem = StringCopy(Items[n]);
@@ -377,6 +414,47 @@ void Editor_Render() {
     ImVec2 Pos = ImGui::GetCursorScreenPos();
 
     Editor_RenderRows(WindowSize, Pos);
+}
 
-    ImGui::End();
+void Editor_HandleInput() {
+    ImGuiIO& IO = ImGui::GetIO();
+
+    bool CtrlDown = IO.ConfigMacOSXBehaviors ? IO.KeySuper : IO.KeyCtrl;
+	bool AltDown = IO.ConfigMacOSXBehaviors ? IO.KeyCtrl : IO.KeyAlt;
+	bool ShiftDown = IO.KeyShift;
+    if (ImGui::IsWindowFocused()) {
+        if ((CtrlDown && !AltDown && !ShiftDown) && ImGui::IsKeyPressed(ImGuiKey_Q)) { // 0x51 == Q
+            exit(0);
+        } 
+
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) { // VK_UP == 0x26 == Up Arrow
+            if (State.CPosY != 0) {
+                State.CPosY--;
+            }
+        } else if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) { // VK_LEFT == 0x25 == Left Arrow
+            if (State.CPosX != 0) {
+                State.CPosX--;
+            }
+        } else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) { // VK_DOWN == 0x28 == Down Arrow
+            if (State.CPosY != State.Rows - 1) {
+                State.CPosY++;
+            }
+        } else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) { // VK_RIGHT == 0x27 == Right Arrow
+            if (State.CPosX != State.Columns - 1) {
+                State.CPosX++;
+            }
+        } else if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+            Editor_DeleteChar();
+        }
+
+        if (!IO.InputQueueCharacters.empty()) {
+            for (u32 Index = 0; Index < IO.InputQueueCharacters.size(); Index++) {
+                ImWchar Char = IO.InputQueueCharacters[Index];
+                if (Char == 0x08) continue;
+                Editor_InsertChar(Char);
+            }
+
+            IO.InputQueueCharacters.resize(0);
+        }
+    }
 }

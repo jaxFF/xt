@@ -2,6 +2,7 @@
 #define OPENGL_IMPORTS_H
 
 typedef const GLubyte* APIENTRY _glGetString(GLenum Name);
+typedef const GLubyte* APIENTRY _glGetStringi(GLenum Name, GLuint index);
 
 // OpenGL 1.0
 typedef void APIENTRY _glClear(GLbitfield mask);
@@ -101,6 +102,8 @@ typedef void APIENTRY _glGetProgramInfoLog(GLuint program, GLsizei maxLength, GL
 typedef void APIENTRY _glShaderSource(GLuint shader, GLsizei count, const GLchar **string, const GLint *length);
 typedef GLuint APIENTRY _glCreateShader(GLenum shaderType);
 typedef GLuint APIENTRY _glCreateProgram();
+typedef void APIENTRY _glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void * data);
+typedef GLboolean APIENTRY _glIsProgram(GLuint program);
 
 // OpenGL 3.0
 typedef void APIENTRY _glBindVertexArray(GLuint array);

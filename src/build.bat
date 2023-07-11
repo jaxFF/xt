@@ -5,7 +5,7 @@ set path=%path%;Z:\xt\tools
 pushd ..\
 
 IF NOT EXIST tools\btime.exe ( pushd tools\btime && call build.bat && popd )
-btime --begin xt_build.bld
+bldtime --begin xt_build.bld
 
 set BuildDir=%~dp0..\build
 set BuildType=%1
@@ -40,8 +40,8 @@ pushd %BuildDir%
 
 del *.pdb > NUL 2> NUL && del *.map > NUL 2> NUL
 
-%CompileCommand% %CommonCompilerFlags% -I..\imgui -I..\imgui\examples ..\src\win32_main.cpp -Fowin32_main.obj -Fmwin32_main.map /link %CommonLinkerFlags%
-btime --end xt_build.bld
+%CompileCommand% %CommonCompilerFlags% -I..\imgui -I..\imgui\backends ..\src\win32_main.cpp -Fowin32_main.obj -Fmwin32_main.map /link %CommonLinkerFlags%
+bldtime --end xt_build.bld
 
 popd
 popd
